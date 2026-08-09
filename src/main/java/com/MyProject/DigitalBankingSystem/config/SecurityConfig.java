@@ -1,9 +1,5 @@
 package com.MyProject.DigitalBankingSystem.config;
 
-import com.MyProject.DigitalBankingSystem.auth.jwt.JwtAuthFilter;
-import com.MyProject.DigitalBankingSystem.auth.jwt.JwtService;
-import com.MyProject.DigitalBankingSystem.auth.jwt.TokenBlacklistService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,11 +13,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.MyProject.DigitalBankingSystem.auth.jwt.JwtAuthFilter;
+import com.MyProject.DigitalBankingSystem.auth.jwt.JwtService;
+import com.MyProject.DigitalBankingSystem.auth.jwt.TokenBlacklistService;
+import com.MyProject.DigitalBankingSystem.rate_limiting.filter.RateLimitingFilter;
+import com.MyProject.DigitalBankingSystem.rate_limiting.service.RateLimitingService;
+
+import lombok.RequiredArgsConstructor;
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final RateLimitingService rateLimitingService;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -63,12 +70,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/fraud-logs/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitingFilter(), UsernamePasswordAuthenticationFilter.class) // Accepts 2 parameters at a time
+                .addFilterBefore(jwtAuthFilter(), RateLimitingFilter.class)
                 .build();
     }
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
         return new JwtAuthFilter(jwtService, tokenBlacklistService);
+    }
+    
+    @Bean
+    public RateLimitingFilter rateLimitingFilter() { 
+        return new RateLimitingFilter(rateLimitingService); 
     }
 
     @Bean

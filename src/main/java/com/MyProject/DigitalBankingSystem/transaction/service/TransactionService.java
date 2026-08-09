@@ -99,7 +99,7 @@ public class TransactionService {
     public Page<TransactionResponse> getMyTransactions(String accountNumber, Pageable pageable) {
         Account account = getAccountOrThrow(accountNumber);
         validateUserSecurity(account.getUser(), getSecuredUser());
-        Page<Transaction> transactions =transactionRepository.findBySenderAccountOrReceiverAccountOrderByTransactionAtDesc(
+        Page<Transaction> transactions = transactionRepository.findBySenderAccountOrReceiverAccountOrderByTransactionAtDesc(
                 account,
                 account,
                 pageable
@@ -238,7 +238,7 @@ public class TransactionService {
 
     private void validateActiveAccount(Account account) {
         if (account.getStatus() != AccountStatus.ACTIVE) {
-            throw new InvalidTransactionException("Accpunt is not ACTIVE. Current status:  " + account.getStatus());
+            throw new InvalidTransactionException("Account is not ACTIVE. Current status:  " + account.getStatus());
         }
     }
 
