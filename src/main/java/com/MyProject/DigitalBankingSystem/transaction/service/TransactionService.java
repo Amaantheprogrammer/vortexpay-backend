@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.MyProject.DigitalBankingSystem.audit.annotation.Auditable;
 import com.MyProject.DigitalBankingSystem.audit.entity.AuditableAction;
 import com.MyProject.DigitalBankingSystem.audit.entity.EntityType;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -40,6 +41,7 @@ import com.MyProject.DigitalBankingSystem.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -110,10 +112,6 @@ public class TransactionService {
     @Transactional
     @Auditable(action = AuditableAction.TRANSFER, entityType = EntityType.TRANSACTION)
     public TransactionResponse transfer(String key, TransactionRequest transactionRequest) {
-        if (idempotencyService.exists(key, TRANSFER)) {
-            throw new DuplicateResourceException("Transaction already processed");
-        }
-
         Account senderAccount = getAccountOrThrow(transactionRequest.getSenderAccountNumber());
 
         validateUserSecurity(senderAccount.getUser(), getSecuredUser());
@@ -153,8 +151,6 @@ public class TransactionService {
                 .status(TransactionStatus.SUCCESS)
                 .build();
         Transaction savedTransaction = transactionRepository.save(transaction);
-
-        idempotencyService.save(key, TRANSFER, savedTransaction.getTransactionReference());
 
         return modelMapper.map(savedTransaction, TransactionResponse.class);
     }
